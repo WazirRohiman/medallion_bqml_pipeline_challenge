@@ -222,3 +222,6 @@ local_data/*
 
 # instructions
 instructions/*
+
+# tasks
+tasks/*
