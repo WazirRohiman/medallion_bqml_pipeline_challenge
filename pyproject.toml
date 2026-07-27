@@ -1,0 +1,15 @@
+[project]
+name = "medallion-bqml-pipeline-challenge"
+version = "0.1.0"
+description = "BigQuery medallion pipeline and native BQML assessment"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+  "pre-commit",
+  "sqlfluff==4.2.2",
+]

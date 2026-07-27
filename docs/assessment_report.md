@@ -1,6 +1,7 @@
 # Technical Assessment Review: Medallion Pipeline and BQML
 
-**Date:** 2026-07-27  
+**Date:** 2026-07-27
+
 **Reviewed:** the screening brief in Markdown, the supplied PDF metadata, the full initial plan, the
 repository state, and an independent byte- and row-level profile of
 `raw_transactions_10000.csv`.
