@@ -420,6 +420,9 @@ put it in a separate load manifest.
 | One supplied static CSV and an idempotent pipeline requirement | `WRITE_TRUNCATE` for Bronze and `CREATE OR REPLACE` downstream | Safe for the assessed snapshot; a live feed needs separately agreed ingestion semantics |
 | The brief declares non-positive amounts invalid | Route them to rejects with `amount_not_positive` | Implements the stated rule without claiming they are refunds or corrections |
 | Missing signup and return values have explicit defaults | Preserve missingness flags and default only expected missing markers | Keeps required output usable without concealing lineage or malformed non-null values |
+| The clean-table contract requires a non-negative signup-to-purchase interval | Reject populated signup dates after purchase with `signup_date_after_purchase` | Prevents a misleading negative engineered feature while retaining the original row and reason |
+| Clean and rejected outputs require identical parsing decisions | Materialise validation once in a BigQuery temporary table, assert the split, then publish both outputs | Avoids duplicated casting logic without introducing a stored procedure or framework |
+| BigQuery transactions do not support permanent table-replacement DDL | Validate both temporary outputs before publication, then replace rejects first and the mandatory clean table last | Reduces partial-publication risk proportionately; transactional dual-table DML is deferred unless it becomes a production requirement |
 | The requested model features are transaction columns, while the asset name says customer segments | Keep the required output at transaction grain and document the mismatch | Avoids silently inventing a customer aggregation rule |
 | Native BQML is required, while this remains a data-engineering assessment | Use one simple K-means model with explicit features and standardisation; defer custom seeding and k-sweeps | Meets the requirement without turning the submission into model research |
 | The proof table should be business-consumable | Select Gold columns explicitly and omit the nested distance array | Prevents a diagnostic repeated record from becoming an accidental public interface |
@@ -439,7 +442,7 @@ they are not presented as unresolved annotations.
 | Do not turn deterministic K-means initialization into a data-science exercise. | The mandatory design uses operational replacement and documents cluster-ID instability. Custom seeds and model experimentation are deferred unless stable results become a stated requirement. |
 | Bronze should load the source with minimal-to-no change. | The design uses seven explicit `STRING` columns and avoids autodetect and loader-level conversion of the text `NULL`. |
 | A rejected-records table is useful only if it records why each row was rejected. | Rejects retain raw values and an array of all applicable rejection reasons, rather than a single reason with arbitrary precedence. |
-| Tests should include a happy path, a sad path, and at least three edge cases. | The test plan now includes an inline fixture covering valid data, malformed data, both required imputations, zero and negative amounts, multiple simultaneous errors, and genuine same-day purchases. |
+| Tests should include a happy path, a sad path, and at least three edge cases. | The temporary fixture now covers every rejection branch, both required imputations, padded missing markers, case-insensitive Boolean casting, multiple simultaneous errors, and genuine same-day purchases. The real transformation and independent assertions are also executed. |
 | Apply YAGNI; prioritise maintainability and readability, and write comments that explain why rather than restating how. | Platform additions remain deferred, the small tables are not physically over-designed, and the SQL documentation standard is stated explicitly. |
 | Preserve the prompt or review trigger behind decisions that materially affect development. | This decision-lineage table and interaction log connect each important constraint or review note to its implementation consequence. |
 | Continue using the gitignored `local_data/` directory for the supplied sample. | All local load examples now use `./local_data/raw_transactions_10000.csv`; no second raw-data convention is introduced. |
@@ -450,6 +453,7 @@ they are not presented as unresolved annotations.
 | The typed DDL and the numeric filter-order observation are approved. | Both remain in the engineering guidance; fixed snapshot counts were removed from column descriptions and reusable tests. |
 | Use common data-engineering incidents as working instincts without turning the assessment into an enterprise platform. | Bronze now fails fast on an unexpected header or malformed record, names every load behavior explicitly, and proves replacement by rerunning the fixed snapshot. No incremental framework, staging layer, or physical optimisation was added. |
 | Bronze review requested stronger required-field and load-command contracts without hardcoding a cloud project in SQL. | Literal `NULL` is rejected from every field where the source contract does not document it, positional matching is explicit, and the fake CLI test compares the complete ordered command. Portable `dataset.table` SQL remains bound centrally by the project-scoped runner. |
+| Silver implementation was approved only after checking its names, organisation, and transformations against the brief. | The required `sql/silver/silver_transform.sql` creates `retail_silver.cleaned_transactions`; rejected-row lineage, missingness flags, assertions, and temporary fixtures remain additive controls. |
 
 ## Testing strategy
 
@@ -504,6 +508,10 @@ Use an inline fixture to exercise:
 - edge case: zero amount is rejected;
 - edge case: multiple invalid fields produce one rejected row with multiple reasons;
 - edge case: a genuine same-day signup and purchase produces zero days without an imputation flag.
+- edge case: every missing required field produces its specific rejection reason;
+- edge case: padded documented missing markers follow the same normalization as production;
+- edge case: mixed-case Boolean text accepted by BigQuery remains valid;
+- edge case: blank optional fields are rejected because they are not the documented missing marker.
 
 ## Technology choices with highest value
 
