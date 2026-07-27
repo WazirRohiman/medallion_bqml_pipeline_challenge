@@ -16,6 +16,7 @@ Run them from any directory:
 ./scripts/bq.sh ls
 ./scripts/gcloud.sh services list --enabled
 ./scripts/run_sql.sh sql/path/to/query.sql
+./scripts/load_bronze.sh
 ```
 
 Pass normal command arguments after the wrapper:
@@ -32,6 +33,10 @@ contract:
 ./scripts/run_sql.sh sql/silver/silver_transform.sql
 ```
 
+SQL files intentionally use portable `dataset.table` paths. BigQuery resolves those paths against
+the query-executing project supplied by `GCP_PROJECT_ID`; do not duplicate a local project ID inside
+the SQL.
+
 Do not run a wrapper with `source`. Executing it normally ensures its environment is discarded when
 the command exits.
 
@@ -47,4 +52,5 @@ Run the wrapper regression tests without contacting Google Cloud:
 
 ```bash
 ./tests/test_project_wrappers.sh
+./tests/test_bronze_load.sh
 ```

@@ -176,15 +176,18 @@ rates.
 
 ### 1. Bronze fidelity can be destroyed at load time
 
-Autodetect or `--null_marker=NULL` can perform Silver work during ingestion. Use an explicit
-seven-column `STRING` schema, skip exactly one header row, and do not configure `NULL` as the loader's
-null marker.
+Autodetect or `--null_marker=NULL` can perform Silver work during ingestion. Validate the exact
+supplied header before the load, use an explicit seven-column `STRING` schema, skip exactly one
+header row, and do not configure `NULL` as the loader's null marker. The preflight prevents a
+reordered or renamed header from being accepted silently under explicitly configured positional
+loading. The current BigQuery load path does not allow `source_column_match=NAME` together with a
+supplied table schema.
 
 Because `bq load` appends by default, the assessment working rule is to use
-`--replace`/`WRITE_TRUNCATE` for this one fixed snapshot. Otherwise a second run duplicates the
-source rows. This is not the proposed design for an unspecified live feed: recurring production data
-would require an agreed append, deduplication, replay, and late-arrival strategy backed by source
-metadata.
+`--replace`/`WRITE_TRUNCATE` for this one fixed snapshot, with zero tolerated malformed records.
+Otherwise a second run duplicates the source rows. This is not the proposed design for an
+unspecified live feed: recurring production data would require an agreed append, deduplication,
+replay, and late-arrival strategy backed by source metadata.
 
 Bronze assertions should prove:
 
@@ -413,7 +416,7 @@ put it in a separate load manifest.
 
 | Triggering request or constraint | Decision | Scope and rationale |
 |---|---|---|
-| “Load the CSV exactly as it is” and perform cleansing in Silver | Explicit seven-column `STRING` Bronze schema; no autodetect or `NULL` loader marker | Preserves layer responsibility and the source's literal `NULL` representation |
+| “Load the CSV exactly as it is” and perform cleansing in Silver | Exact header preflight plus an explicit seven-column `STRING` Bronze schema; no autodetect or `NULL` loader marker | Prevents silent column misalignment while preserving layer responsibility and the source's literal `NULL` representation |
 | One supplied static CSV and an idempotent pipeline requirement | `WRITE_TRUNCATE` for Bronze and `CREATE OR REPLACE` downstream | Safe for the assessed snapshot; a live feed needs separately agreed ingestion semantics |
 | The brief declares non-positive amounts invalid | Route them to rejects with `amount_not_positive` | Implements the stated rule without claiming they are refunds or corrections |
 | Missing signup and return values have explicit defaults | Preserve missingness flags and default only expected missing markers | Keeps required output usable without concealing lineage or malformed non-null values |
@@ -445,6 +448,8 @@ they are not presented as unresolved annotations.
 | Verify whether datasets inherit a project location and provide official documentation. | The engineering companion explains that a project has no BigQuery dataset region to inherit, that an unspecified/default-less location resolves to `US`, and that dataset location is immutable. It links the official dataset and location documentation. |
 | Explain model rerun behavior with a concrete example and official documentation. | The engineering companion distinguishes operational replacement from deterministic assignments, shows a transaction changing numeric cluster ID between retrains, explains why cluster IDs are not durable keys, and links the K-means initialization documentation. |
 | The typed DDL and the numeric filter-order observation are approved. | Both remain in the engineering guidance; fixed snapshot counts were removed from column descriptions and reusable tests. |
+| Use common data-engineering incidents as working instincts without turning the assessment into an enterprise platform. | Bronze now fails fast on an unexpected header or malformed record, names every load behavior explicitly, and proves replacement by rerunning the fixed snapshot. No incremental framework, staging layer, or physical optimisation was added. |
+| Bronze review requested stronger required-field and load-command contracts without hardcoding a cloud project in SQL. | Literal `NULL` is rejected from every field where the source contract does not document it, positional matching is explicit, and the fake CLI test compares the complete ordered command. Portable `dataset.table` SQL remains bound centrally by the project-scoped runner. |
 
 ## Testing strategy
 

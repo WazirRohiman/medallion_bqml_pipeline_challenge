@@ -79,13 +79,22 @@ bq load \
   --location=africa-south1 \
   --source_format=CSV \
   --skip_leading_rows=1 \
+  --source_column_match=POSITION \
+  --max_bad_records=0 \
   --replace \
-  --schema=./schemas/raw_transactions.json \
   "${PROJECT_ID}:retail_bronze.raw_transactions" \
-  ./local_data/raw_transactions_10000.csv
+  ./local_data/raw_transactions_10000.csv \
+  ./schemas/raw_transactions.json
 ```
 
 Do not set `--autodetect` or `--null_marker=NULL`.
+
+The load wrapper checks that the source header exactly matches the seven committed schema fields
+before invoking BigQuery. This makes a reordered, renamed, or unexpected header visible instead of
+silently loading values into the wrong string columns. The current BigQuery load path rejects
+`--source_column_match=NAME` when a table schema is supplied, so the compatible design combines this
+preflight with explicitly configured positional loading. `--max_bad_records=0` makes the documented
+default explicit: one malformed record fails the load.
 
 ### Reusable assertions versus snapshot evidence
 

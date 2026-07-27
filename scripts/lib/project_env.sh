@@ -21,6 +21,16 @@ require_project_variable() {
   fi
 }
 
+resolve_project_path() {
+  local configured_path="$1"
+
+  if [[ "${configured_path}" == /* ]]; then
+    printf '%s\n' "${configured_path}"
+  else
+    printf '%s/%s\n' "${PROJECT_ROOT}" "${configured_path#./}"
+  fi
+}
+
 load_project_environment() {
   if [[ ! -r "${PROJECT_ENV_FILE}" ]]; then
     printf 'Cannot read %s. Copy .env.example to .env and configure it.\n' \
