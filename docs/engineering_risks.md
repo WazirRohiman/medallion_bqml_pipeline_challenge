@@ -255,9 +255,15 @@ validated AS (
           is_returned_text IS NOT NULL AND typed_is_returned IS NULL,
           'is_returned_unparseable',
           NULL
+        ),
+        IF(
+          typed_signup_date > typed_purchase_date,
+          'signup_date_after_purchase',
+          NULL
         )
-      ]) AS reason
+      ]) AS reason WITH OFFSET AS reason_offset
       WHERE reason IS NOT NULL
+      ORDER BY reason_offset
     ) AS rejection_reasons
   FROM typed
 )
@@ -314,6 +320,18 @@ WHERE ARRAY_LENGTH(rejection_reasons) = 0;
 
 A temporary table in a multi-statement Silver script can materialize `validated` once and feed both
 the clean and rejected tables. A CTE alone is scoped to one SQL statement.
+
+BigQuery does not allow DDL that creates or replaces permanent tables inside a multi-statement
+transaction. The assessment script therefore builds both temporary outputs and runs its routing and
+business-rule assertions before replacing either permanent table. It publishes rejects first and
+the mandatory clean table last. Each replacement is atomic on its own, but the pair is not one
+transaction. A production requirement for atomic dual-table publication would justify pre-created
+schemas plus transactional `TRUNCATE`/`INSERT` DML; that extra lifecycle is not warranted for this
+fixed assessment snapshot.
+
+Official reference:
+
+- [BigQuery multi-statement transaction limitations](https://docs.cloud.google.com/bigquery/docs/transactions)
 
 Losslessness requires more than a row-count equation:
 
@@ -651,6 +669,20 @@ Those are observed snapshot metrics, not embedded expectations in the reusable t
 Use a small inline fixture or dedicated test CTE to exercise transformation behaviour independently
 of the supplied file.
 
+The standalone fixture intentionally mirrors the row-level validation expressions rather than
+introducing a persistent helper routine solely for tests. That duplication is a known maintenance
+trade-off. A reusable routine would expand the deployment contract, while BigQuery table functions
+with table parameters are still a Pre-GA feature. For this assessment, the proportionate controls
+are to keep the fixture beside the production SQL, cover every validation branch, and also execute
+the real transformation followed by the independent post-publication assertions. A production
+Dataform implementation could centralise the shared SQL dependency without adding a warehouse
+routine.
+
+Official references:
+
+- [BigQuery user-defined functions](https://docs.cloud.google.com/bigquery/docs/user-defined-functions)
+- [BigQuery table functions](https://docs.cloud.google.com/bigquery/docs/table-functions)
+
 ### Happy path
 
 - Valid dates, positive amount, valid category, and `TRUE`/`FALSE`.
@@ -672,6 +704,12 @@ At least these cases are valuable:
 4. Negative amount → rejected as `amount_not_positive`.
 5. Multiple invalid fields → one rejected row carrying every applicable reason.
 6. Signup equal to purchase date → clean with a legitimate zero-day gap and missingness flag false.
+7. Padded documented `NULL` markers → treated consistently with the transformation's trimming.
+8. Mixed-case `true`/`false` → accepted because BigQuery's Boolean cast is case-insensitive.
+9. Missing required identifiers, purchase date, amount, or category → rejected with a specific
+   reason.
+10. Blank optional fields → rejected as unparseable because blank text is not the documented
+    missing marker.
 
 The distinction in case 6 proves why the missingness flag matters: an observed zero and an imputed
 zero have the same derived value but different lineage.
