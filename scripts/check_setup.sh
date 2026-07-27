@@ -19,11 +19,7 @@ for required_command in gcloud bq; do
   fi
 done
 
-if [[ "${SOURCE_CSV_PATH:-}" == /* ]]; then
-  source_csv="${SOURCE_CSV_PATH}"
-else
-  source_csv="${PROJECT_ROOT}/${SOURCE_CSV_PATH#./}"
-fi
+source_csv="$(resolve_project_path "${SOURCE_CSV_PATH:-}")"
 
 if [[ -f "${source_csv}" ]]; then
   printf '[ok] source CSV exists\n'

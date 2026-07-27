@@ -1,0 +1,44 @@
+[
+  {
+    "name": "transaction_id",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Source transaction identifier; the Bronze table preserves the supplied text."
+  },
+  {
+    "name": "customer_id",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Source customer identifier; not unique at transaction grain."
+  },
+  {
+    "name": "signup_date",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Source signup date text, including the literal missing-value marker NULL."
+  },
+  {
+    "name": "purchase_date",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Source purchase date text; type conversion belongs to Silver."
+  },
+  {
+    "name": "amount",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Source transaction amount text; validation and type conversion belong to Silver."
+  },
+  {
+    "name": "item_category",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Source retail item category."
+  },
+  {
+    "name": "is_returned",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Source return flag text, including the literal missing-value marker NULL."
+  }
+]

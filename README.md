@@ -1,10 +1,8 @@
 # Medallion Pipeline and BQML Challenge
 
 A source-controlled BigQuery implementation of the retail Bronze, Silver, and Gold pipeline required
-by the screening assessment.
-
-The project is currently in its setup phase. Pipeline SQL will be added after the local tooling and
-cloud connectivity checks pass.
+by the screening assessment. The current implementation covers source-faithful Bronze ingestion;
+Silver and Gold will be added in their own phases.
 
 ## Local prerequisites
 
@@ -35,3 +33,28 @@ uv run pre-commit run --all-files
 ```
 
 The supplied CSV and assessment instructions are intentionally excluded from Git.
+
+## Bronze ingestion
+
+The setup SQL creates the three required empty datasets in the location owned by the project
+wrapper. This phase loads and validates only `retail_bronze.raw_transactions`.
+
+```bash
+./scripts/run_sql.sh sql/setup/create_datasets.sql
+./scripts/load_bronze.sh
+./scripts/run_sql.sh sql/bronze/bronze_assertions.sql
+./scripts/run_sql.sh sql/bronze/bronze_profile.sql
+```
+
+The load validates the exact CSV header before using the committed seven-column `STRING` schema,
+pins positional column matching, rejects any malformed record, and replaces the fixed assessment
+snapshot on rerun. It deliberately does not use schema autodetection or convert the source text
+`NULL` into a SQL null.
+
+Run the focused local checks without contacting Google Cloud:
+
+```bash
+./tests/test_project_wrappers.sh
+./tests/test_bronze_load.sh
+uv run pre-commit run --all-files
+```
