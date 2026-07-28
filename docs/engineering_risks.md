@@ -464,6 +464,20 @@ FROM ML.PREDICT(
 );
 ```
 
+The executable prediction script adds two controls around this abbreviated projection:
+
+1. It materializes clean Silver into a temporary `prediction_source` table, then uses that same
+   script-local snapshot for `ML.PREDICT` and all pre-publication comparisons. Separate statements
+   against the persistent Silver table could otherwise observe different versions during a
+   concurrent replacement.
+2. It revalidates positive, populated `amount` and populated `item_category` before prediction.
+   BQML's built-in missing-value imputation is useful model behavior, but it must not conceal a
+   regression in the Silver data contract.
+
+Training also requires at least four distinct `(amount, item_category)` vectors before replacing a
+four-cluster model. This rejects an obviously degenerate input containing four duplicate rows; it
+does not prove that four clusters are analytically meaningful.
+
 If an assigned-centroid distance is genuinely useful, flatten only the matching child:
 
 ```sql

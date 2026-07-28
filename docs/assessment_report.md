@@ -454,6 +454,8 @@ they are not presented as unresolved annotations.
 | Use common data-engineering incidents as working instincts without turning the assessment into an enterprise platform. | Bronze now fails fast on an unexpected header or malformed record, names every load behavior explicitly, and proves replacement by rerunning the fixed snapshot. No incremental framework, staging layer, or physical optimisation was added. |
 | Bronze review requested stronger required-field and load-command contracts without hardcoding a cloud project in SQL. | Literal `NULL` is rejected from every field where the source contract does not document it, positional matching is explicit, and the fake CLI test compares the complete ordered command. Portable `dataset.table` SQL remains bound centrally by the project-scoped runner. |
 | Silver implementation was approved only after checking its names, organisation, and transformations against the brief. | The required `sql/silver/silver_transform.sql` creates `retail_silver.cleaned_transactions`; rejected-row lineage, missingness flags, assertions, and temporary fixtures remain additive controls. |
+| Gold must remain a data-engineering deliverable rather than become a model-tuning exercise. | The implementation uses exactly `amount` and `item_category`, four explicit clusters, standardised numeric features, a transaction-grain flat prediction table, executable model/table contracts, and read-only interpretation queries. No hyperparameter sweep, customer aggregate, or additional persistent profile table was added. |
+| Gold review identified degenerate training input, prediction-time drift, and orchestration-gate risks. | Training now requires four distinct feature vectors as a structural—not statistical-quality—guard. Prediction revalidates features and uses one temporary Silver snapshot for prediction and exact pre-publication comparison. The Dataform recommendation now requires assertion actions to be explicit dependencies rather than implying ordinary table dependencies provide a gate. |
 
 ## Testing strategy
 
@@ -522,7 +524,9 @@ Use an inline fixture to exercise:
 2. **Native BigQuery assertions** for executable data contracts.
 3. **BQML inspection functions**: `ML.EVALUATE`, `ML.CENTROIDS`, and `ML.FEATURE_INFO`.
 4. **Dataform in the production design**, because it provides SQL dependencies, assertions,
-   documentation, scheduling, and run logs in the Google Cloud/BigQuery ecosystem.
+   documentation, scheduling, and run logs in the Google Cloud/BigQuery ecosystem. Downstream
+   actions must explicitly depend on assertion actions; table dependencies alone do not create
+   assertion gates.
 5. **`INFORMATION_SCHEMA.JOBS_BY_PROJECT`** as an operational evidence query for duration, bytes
    processed, slot milliseconds, and failures instead of a custom logging framework.
 6. **Table and column descriptions plus labels** for discoverability, ownership, and cost attribution.
